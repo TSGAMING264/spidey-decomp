@@ -1377,10 +1377,31 @@ CGlow::~CGlow(void)
 	this->DeleteFrom(reinterpret_cast<CBit**>(&GlowList));
 }
 
-// @MEDIUMTODO
-void CQuadBit::OrientUsing(CVector *, SVECTOR *, i32, i32, i32)
+// @Ok
+// @Matching
+void CQuadBit::OrientUsing(CVector *a2, SVECTOR *a3, i32 a4, i32 a5, i32 a6)
 {
-	printf("CQuadBit::OrientUsing(CVector *, SVECTOR *, i32, i32, i32)");
+	CVector normal(a3->vx, a3->vy, a3->vz);
+	CVector perp2;
+	CVector perp1;
+
+	Utils_CalcPerps(&normal, &perp1, &perp2);
+
+	int angle = a6 & 0xFFF;
+	angle <<= 2;
+	int trig0 = *reinterpret_cast<i16*>(0x610C48 + angle);
+	int trig1 = *reinterpret_cast<i16*>(0x610C4A + angle);
+
+	CVector rotated1 = ((perp1 * trig1) + (perp2 * trig0)) >> 12;
+	CVector rotated2 = ((perp1 * -trig0) + (perp2 * trig1)) >> 12;
+
+	rotated1 *= a4;
+	rotated2 *= a5;
+
+	this->mPos = *a2 - rotated1 - rotated2;
+	this->mPosB = *a2 + rotated1 - rotated2;
+	this->mPosC = *a2 - rotated1 + rotated2;
+	this->mPosD = *a2 + rotated1 + rotated2;
 }
 
 // @Ok
@@ -2615,6 +2636,11 @@ void patch_CQuadBit(void)
 		0x00409400,
 		CQuadBit::OrientUsing,
 		"?OrientUsing@CQuadBit@@QAEXPAVCVector@@PAUSVECTOR@@HH@Z");
+
+	PATCH_PUSH_RET_POLY(
+		0x00409560,
+		CQuadBit::OrientUsing,
+		"?OrientUsing@CQuadBit@@QAEXPAVCVector@@PAUSVECTOR@@HHH@Z");
 }
 
 // @Bogus
